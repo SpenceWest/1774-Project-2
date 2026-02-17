@@ -1,7 +1,7 @@
 class Bus:
-    bus_index_counter = 1  # Start of the counter
+    bus_index_counter = 0  # Start of the counter
 
-    def __init__(self, name, nominal_kv):
+    def __init__(self, name:str, nominal_kv:float):
         self.name = name
         self.nominal_kv = nominal_kv
         self.bus_index = Bus.bus_index_counter  # Assign current counter value
