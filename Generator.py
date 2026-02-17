@@ -1,5 +1,5 @@
 class Generator:
-    def __init__(self, name, bus1_name, voltage_setpoint, mw_setpoint):
+    def __init__(self, name: str, bus1_name: str, voltage_setpoint: float, mw_setpoint: float):
         self.name = name
         self.bus1_name = bus1_name
         self.voltage_setpoint = voltage_setpoint
