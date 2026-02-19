@@ -31,8 +31,19 @@ class Circuit:
         new_load = Load(name, bus_name,  mw, mvar)
         self.loads[name] = new_load
 
-
-
+    def add_generator(self, name: str, bus1_name: str, voltage_setpoint: float, mw_setpoint: float):
+            if name in self.generators:
+                raise ValueError(f"Generator with name '{name}' already exists.")
+                
+            new_generator = Generator(name, bus1_name, voltage_setpoint, mw_setpoint)
+            self.generators[name] = new_generator
+        
+    def add_transformer(self, name: str, bus1_name: str, bus2_name: str, r: float, x: float):
+        if name in self.transformers:
+            raise ValueError(f"Transformer with name '{name}' already exists.")
+            
+        new_transformer = Transformer(name, bus1_name, bus2_name, r, x)
+        self.transformers[name] = new_transformer
 
 
 
@@ -92,7 +103,30 @@ if __name__ == "__main__":
               )
 
 
+        print("--- Add and Verify a Transformer ---")
+    circuit1.add_transformer("T1", "Bus 1", "Bus 2", 0.01, 0.10)
+    
+    # Expected output: ['T1']
+    print(list(circuit1.transformers.keys())) 
+    
+    print(circuit1.transformers["T1"].name,
+          circuit1.transformers["T1"].bus1_name,
+          circuit1.transformers["T1"].bus2_name,
+          circuit1.transformers["T1"].r,
+          circuit1.transformers["T1"].x)
 
+ 
+    # ---------------------------------------------------------
+    print("\n--- Add and Verify a Generator ---")
+    circuit1.add_generator("G1", "Bus 1", 1.04, 100.0)
+    
+    # Expected output: ['G1']
+    print(list(circuit1.generators.keys())) 
+    
+    print(circuit1.generators["G1"].name,
+          circuit1.generators["G1"].bus1_name,
+          circuit1.generators["G1"].voltage_setpoint,
+          circuit1.generators["G1"].mw_setpoint)
 
 
 
