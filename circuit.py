@@ -80,7 +80,7 @@ if __name__ == "__main__":
               circuit1.transmission_lines["Line 1"].g,
               circuit1.transmission_lines["Line 1"].b)
 
-        #Verify Load
+        #Verify Loads
         circuit1.add_load_element("Line 1", "Bus 2", 50, 30)
 
         print(list(circuit1.loads.keys()))
