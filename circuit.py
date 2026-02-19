@@ -27,5 +27,5 @@ class Circuit:
 
     def add_load_element(self, name: str,  bus1:str, mw: float, mvar : float):
 
-        new_load = Load(name, bus1, p, q, r, x, )
+        new_load = Load(name, bus1,  mw, mvar)
         self.loads[name] = new_load
