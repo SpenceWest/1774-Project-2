@@ -2,6 +2,7 @@ from Bus import Bus
 from TransmissionLine import TransmissionLine
 from Generator import Generator
 from Load import Load
+from Transformer import Transformer
 
 class Circuit:
     def __init__(self, name:str):
@@ -103,30 +104,30 @@ if __name__ == "__main__":
               )
 
 
-        print("--- Add and Verify a Transformer ---")
-    circuit1.add_transformer("T1", "Bus 1", "Bus 2", 0.01, 0.10)
-    
-    # Expected output: ['T1']
-    print(list(circuit1.transformers.keys())) 
-    
-    print(circuit1.transformers["T1"].name,
-          circuit1.transformers["T1"].bus1_name,
-          circuit1.transformers["T1"].bus2_name,
-          circuit1.transformers["T1"].r,
-          circuit1.transformers["T1"].x)
 
- 
-    # ---------------------------------------------------------
-    print("\n--- Add and Verify a Generator ---")
-    circuit1.add_generator("G1", "Bus 1", 1.04, 100.0)
-    
-    # Expected output: ['G1']
-    print(list(circuit1.generators.keys())) 
-    
-    print(circuit1.generators["G1"].name,
-          circuit1.generators["G1"].bus1_name,
-          circuit1.generators["G1"].voltage_setpoint,
-          circuit1.generators["G1"].mw_setpoint)
+        circuit1.add_transformer("T1", "Bus 1", "Bus 2", 0.01, 0.10)
+
+        # Expected output: ['T1']
+        print(list(circuit1.transformers.keys()))
+
+        print(circuit1.transformers["T1"].name,
+              circuit1.transformers["T1"].bus1_name,
+              circuit1.transformers["T1"].bus2_name,
+              circuit1.transformers["T1"].r,
+              circuit1.transformers["T1"].x)
+
+
+        # ---------------------------------------------------------
+
+        circuit1.add_generator("G1", "Bus 1", 1.04, 100.0)
+
+        # Expected output: ['G1']
+        print(list(circuit1.generators.keys()))
+
+        print(circuit1.generators["G1"].name,
+              circuit1.generators["G1"].bus1_name,
+              circuit1.generators["G1"].voltage_setpoint,
+              circuit1.generators["G1"].mw_setpoint)
 
 
 
