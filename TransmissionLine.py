@@ -11,19 +11,25 @@ class TransmissionLine:
         self.g = g
         self.b = b
 
+        # Milestone 3: Compute and store series admittance Yseries = 1 / (r + jx)
+        #              Compute and store shunt admittance Yshunt
         self.Yseries = 1 / (complex(self.r, self.x))
         self.Yshunt = complex(self.g, self.b)
 
     def calc_yprim(self):
-        ys = self.Yseries
-        ysh = self.Yshunt
 
+        # Define the 2x2 matrix for a two-terminal series element and shunt capacitive elements
+        # Matrix format: [[Yseries + Yshunt/2, -Yseries], [-Yseries, Yseries + Yshunt/2]]
+        y_matrix = np.array([
+            [self.Yseries + self.Yshunt/2, -self.Yseries],
+            [-self.Yseries, self.Yseries + self.Yshunt/2]
+        ])
 
+        # Association with bus names as row/column labels
+        bus_labels = [self.bus1_name, self.bus2_name]
+        df_yprim = pd.DataFrame(y_matrix, index=bus_labels, columns=bus_labels)
 
-        buses = [self.bus1_name, self.bus2_name]
-
-
-        return pd.DataFrame([[ys + ysh/2, -ys], [-ys, ys + ysh/2]], index=buses, columns=buses)
+        return df_yprim
 
 
 
