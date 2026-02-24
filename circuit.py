@@ -12,8 +12,7 @@ class Circuit:
         self.transmission_lines = {}
         self.loads = {}
         self.generators = {}
-        self.ybus
-
+        self.ybusss
 
     def add_bus(self, bus_name:str, nominal_kv:float):
 
