@@ -15,22 +15,25 @@ class TransmissionLine:
         self.Yshunt = complex(self.g, self.b)
 
     def calc_yprim(self):
-        ys = self.Yseries
-        ysh = self.Yshunt
+        # Define the 2x2 matrix for a two-terminal series element and shunt capacitive elements
+        # Matrix format: [[Yseries + Yshunt/2, -Yseries], [-Yseries, Yseries + Yshunt/2]]
+        y_matrix = np.array([
+            [self.Yseries + self.Yshunt / 2, -self.Yseries],
+            [-self.Yseries, self.Yseries + self.Yshunt / 2]
+        ])
 
+        # Association with bus names as row/column labels
+        bus_labels = [self.bus1_name, self.bus2_name]
+        df_yprim = pd.DataFrame(y_matrix, index=bus_labels, columns=bus_labels)
 
-
-        buses = [self.bus1_name, self.bus2_name]
-
-
-        return pd.DataFrame([[ys + ysh/2, -ys], [-ys, ys + ysh/2]], index=buses, columns=buses)
+        return df_yprim
 
 
 
 
 if __name__ == "__main__":
     #test
-    line1 = TransmissionLine("Line 1", "bus_1", "bus_2", 0.02, 0.25, 0.0, 0.04)
+    line1 = TransmissionLine("Line 1", "bus_1", "bus_2", 2, 0.25, 0.0, 0.04)
 
 
 
