@@ -106,8 +106,11 @@ if __name__ == "__main__":
 
         circuit1.add_bus("Bus 1", 20)
         circuit1.add_bus("Bus 2", 230)
+        circuit1.add_bus("Bus 3", 20)
 
-        circuit1.add_transmission_line("Line 1", "Bus 1", "Bus 2", 0.02, 0.25, 0.0, 0.04)
+        #circuit1.add_transmission_line("Line 1", "Bus 1", "Bus 2", 0.02, 0.25, 0.0, 0.04)
+
+        circuit1.add_transmission_line("Line 2", "Bus 2", "Bus 3", 0.02, 0.25, 0.0, 0.04)
 
         circuit1.add_transformer("T1", "Bus 1", "Bus 2", 0.01, 0.10)
 
