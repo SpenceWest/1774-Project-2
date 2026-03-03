@@ -15,10 +15,10 @@ class Transformer:
 
     def calc_yprim(self) -> pd.DataFrame:
         """
-        Implementation of Milestone 3: Compute the 2x2 primitive admittance matrix. [cite: 17]
+        Implementation of Milestone 3: Compute the 2x2 primitive admittance matrix.
         Returns a labeled pandas.DataFrame for clarity. 
         """
-        # Define the 2x2 matrix for a two-terminal series element [cite: 53]
+        # Define the 2x2 matrix for a two-terminal series element
         # Matrix format: [[Yseries, -Yseries], [-Yseries, Yseries]]
         y_matrix = np.array([
             [self.Yseries, -self.Yseries],
