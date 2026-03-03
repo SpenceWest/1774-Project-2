@@ -3,6 +3,8 @@ from TransmissionLine import TransmissionLine
 from Generator import Generator
 from Load import Load
 from Transformer import Transformer
+import numpy as np
+import pandas as pd
 
 class Circuit:
     def __init__(self, name:str):
@@ -12,7 +14,8 @@ class Circuit:
         self.transmission_lines = {}
         self.loads = {}
         self.generators = {}
-        self.ybus
+        self.ybus = None
+
 
 
     def add_bus(self, bus_name:str, nominal_kv:float):
@@ -48,6 +51,46 @@ class Circuit:
         self.transformers[name] = new_transformer
 
 
+    def calc_ybus(self):
+        N = len(self.buses.keys())
+
+
+
+        y_matrix = pd.DataFrame(np.zeros((N, N)), dtype=complex, index= list(self.buses.keys()) , columns=list(self.buses.keys()))
+        index_mapping = self.buses.copy()
+
+        i =0
+        for key in index_mapping.keys():
+            index_mapping[key] = i
+            i += 1
+
+        for key in self.transmission_lines.keys():
+            y_prim = self.transmission_lines[key].calc_yprim()
+
+            b1 = self.transmission_lines[key].bus1_name
+            b2 = self.transmission_lines[key].bus2_name
+
+            y_matrix.loc[b1, b1] += y_prim.loc[b1, b1]
+            y_matrix.loc[b1, b2] += y_prim.loc[b1, b2]
+            y_matrix.loc[b2, b1] += y_prim.loc[b2, b1]
+            y_matrix.loc[b2, b2] += y_prim.loc[b2, b2]
+
+        for key in self.transformers.keys():
+            y_prim = self.transformers[key].calc_yprim()
+
+            b1 = self.transformers[key].bus1_name
+            b2 = self.transformers[key].bus2_name
+
+            y_matrix.loc[b1, b1] += y_prim.loc[b1, b1]
+            y_matrix.loc[b1, b2] += y_prim.loc[b1, b2]
+            y_matrix.loc[b2, b1] += y_prim.loc[b2, b1]
+            y_matrix.loc[b2, b2] += y_prim.loc[b2, b2]
+
+        self.ybus = y_matrix
+
+        print()
+
+
 
 
 
@@ -61,7 +104,20 @@ if __name__ == "__main__":
         print(type(circuit1.name))
 
 
-        #Attribute Initialization
+        circuit1.add_bus("Bus 1", 20)
+        circuit1.add_bus("Bus 2", 230)
+        circuit1.add_bus("Bus 3", 20)
+
+        #circuit1.add_transmission_line("Line 1", "Bus 1", "Bus 2", 0.02, 0.25, 0.0, 0.04)
+
+        circuit1.add_transmission_line("Line 2", "Bus 2", "Bus 3", 0.02, 0.25, 0.0, 0.04)
+
+        circuit1.add_transformer("T1", "Bus 1", "Bus 2", 0.01, 0.10)
+
+        circuit1.calc_ybus()
+
+
+        """#Attribute Initialization
 
         print(circuit1.buses)
         print(type(circuit1.buses))
@@ -128,7 +184,7 @@ if __name__ == "__main__":
         print(circuit1.generators["G1"].name,
               circuit1.generators["G1"].bus1_name,
               circuit1.generators["G1"].voltage_setpoint,
-              circuit1.generators["G1"].mw_setpoint)
+              circuit1.generators["G1"].mw_setpoint)"""
 
 
 
