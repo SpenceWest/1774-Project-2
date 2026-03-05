@@ -116,6 +116,7 @@ if __name__ == "__main__":
 
         circuit1.calc_ybus()
 
+        print(circuit1.transmission_lines["Line 2"].b)
 
         """#Attribute Initialization
 
