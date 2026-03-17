@@ -4,6 +4,16 @@ class Load:
         self.bus_name = bus1_name
         self.mw = mw
         self.mvar = mvar
+        self.p = None  # Per unit real power consumption
+        self.q = None  # Per unit reactive power consumption
+
+    def calc_p(self):
+
+        return self.p
+
+    def calc_q(self):
+
+        return self.q
 
 if __name__ == "__main__":
     # Test case based on the PDF example

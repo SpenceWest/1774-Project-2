@@ -23,3 +23,6 @@ if __name__ == "__main__":
     print(bus1.name, bus1.nominal_kv, bus1.bus_index, bus1.bus_type)
     print(bus2.name, bus2.nominal_kv, bus2.bus_index, bus2.bus_type)
     print(bus3.name, bus3.nominal_kv, bus3.bus_index, bus3.bus_type)
+
+    import Settings
+    print(Settings.Settings.freq)

@@ -4,6 +4,12 @@ class Generator:
         self.bus1_name = bus1_name
         self.voltage_setpoint = voltage_setpoint
         self.mw_setpoint = mw_setpoint
+        self.p = None #Per unit real power injection
+
+    def calc_p(self):
+
+        return self.p
+
 
 if __name__ == "__main__":
     # Test case based on the PDF example
