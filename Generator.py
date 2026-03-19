@@ -1,27 +1,29 @@
-class Load:
-    def __init__(self, name: str, bus1_name: str, mw: float, mvar: float):
+class Generator:
+    def __init__(self, name: str, bus_name: str, voltage_setpoint: float, mw_setpoint: float):
+        """
+        Initialize a Generator attached to a specific bus.
+        
+        :param name: Name of the generator (e.g., 'G1')
+        :param bus_name: Name of the bus it is attached to (e.g., 'Bus 1')
+        :param voltage_setpoint: The target voltage magnitude in per-unit (p.u.)
+        :param mw_setpoint: The real power output setpoint in MW
+        """
         self.name = name
-        self.bus_name = bus1_name
-        self.mw = mw
-        self.mvar = mvar
-        self.p = None  # Per unit real power consumption
-        self.q = None  # Per unit reactive power consumption
+        self.bus_name = bus_name
+        self.voltage_setpoint = voltage_setpoint
+        self.mw_setpoint = mw_setpoint
 
-    def calc_p(self, base_mva: float = 100.0):
+    def calc_p(self, base_mva: float = 100.0) -> float:
         """
-        Calculate and return the per-unit real power consumption.
+        Calculates the per-unit real power generation.
+        Generation is considered a POSITIVE power injection into the bus.
         """
-        self.p = self.mw / base_mva
-        return self.p
+        return self.mw_setpoint / base_mva
 
-    def calc_q(self, base_mva: float = 100.0):
+    def calc_q(self, base_mva: float = 100.0) -> float:
         """
-        Calculate and return the per-unit reactive power consumption.
+        For PV and Slack buses, reactive power (Q) is not specified but calculated 
+        by the power flow solution. Returns 0.0 as a placeholder since PV buses 
+        do not calculate Delta Q mismatch.
         """
-        self.q = self.mvar / base_mva
-        return self.q
-
-if __name__ == "__main__":
-    # Test case based on the PDF example
-    load1 = Load("Load-1", "Bus-2", 50.0, 30.0)
-    print(f"{load1.name} at {load1.bus_name} consumes {load1.calc_p()} p.u. P and {load1.calc_q()} p.u. Q")
+        return 0.0
