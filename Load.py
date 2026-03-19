@@ -1,3 +1,6 @@
+from Settings import Settings
+
+
 class Load:
     def __init__(self, name: str, bus1_name: str, mw: float, mvar: float):
         self.name = name
@@ -9,10 +12,11 @@ class Load:
 
     def calc_p(self):
 
+        self.p =self.mw / Settings.sbase
         return self.p
 
     def calc_q(self):
-
+        self.q = self.mvar / Settings.sbase
         return self.q
 
 if __name__ == "__main__":
