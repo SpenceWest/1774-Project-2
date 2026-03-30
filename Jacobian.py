@@ -5,128 +5,265 @@ from circuit import Circuit
 
 
 class Jacobian:
+    """
+    The full Jacobian is partitioned into four submatrices:
+
+        J = | J1  J2 |     where:  J1 = dP/d_delta  (non-slack x non-slack)
+            | J3  J4 |             J2 = dP/d|V|     (non-slack x PQ-only)
+                                   J3 = dQ/d_delta  (PQ-only  x non-slack)
+                                   J4 = dQ/d|V|     (PQ-only  x PQ-only)
+    """
+
     def __init__(self, buses, ybus):
         self.buses = buses
         self.ybus = ybus
-        
-        # Determine variable mappings (Exclude Slack for all; Exclude PV for Q and V)
+
+
         self.p_buses = [b for b in self.buses.values() if b.bus_type != "Slack"]
         self.q_buses = [b for b in self.buses.values() if b.bus_type == "PQ"]
 
+
+
     def calc_jacobian(self):
         """
-        Milestone 7: Constructs the full Jacobian matrix J by calculating
-        submatrices J1, J2, J3, and J4.
+        Assembles and returns the full Jacobian matrix J by stacking the four
+        submatrices computed by the private helper methods below.
+
+            J = | J1  J2 |
+                | J3  J4 |
         """
         J1 = self._calc_j1()
         J2 = self._calc_j2()
         J3 = self._calc_j3()
         J4 = self._calc_j4()
 
-        # Combine the submatrices into the full Jacobian matrix
-        # J = [ J1  J2 ]
-        #     [ J3  J4 ]
-        top_half = np.hstack((J1, J2))
-        bottom_half = np.hstack((J3, J4))
-        J = np.vstack((top_half, bottom_half))
-        
+        # Stack horizontally first, then vertically
+        top    = np.hstack((J1, J2))   # [ J1 | J2 ]
+        bottom = np.hstack((J3, J4))   # [ J3 | J4 ]
+        J      = np.vstack((top, bottom))
         return J
 
-    def _get_p_q_calc(self, i_bus_name):
-        """Helper to compute P_calc and Q_calc for a specific bus."""
-        p_calc = 0.0
-        q_calc = 0.0
-        bus_i = self.buses[i_bus_name]
-        
-        for j_bus_name, bus_j in self.buses.items():
-            yij = self.ybus.loc[i_bus_name, j_bus_name]
-            gij, bij = yij.real, yij.imag
-            delta_ij = bus_i.delta - bus_j.delta
-            
-            p_calc += bus_i.vpu * bus_j.vpu * (gij * math.cos(delta_ij) + bij * math.sin(delta_ij))
-            q_calc += bus_i.vpu * bus_j.vpu * (gij * math.sin(delta_ij) - bij * math.cos(delta_ij))
-            
-        return p_calc, q_calc
 
+
+    #     J1: dP/d_delta
     def _calc_j1(self):
-        """J1 = dP / dDelta (Size: N_non_slack x N_non_slack)"""
+        """
+        J1 submatrix — partial derivative of real power P with respect to
+        voltage angle δ.
+
+          Off-diagonal  (k ≠ n):
+              J1_kn = V_k · Y_kn · V_n · sin(δ_k - δ_n - θ_kn)
+
+          Diagonal  (k = n):
+              J1_kk = -V_k · Σ_{n≠k} [ Y_kn · V_n · sin(δ_k - δ_n - θ_kn) ]
+
+        Size: (N_non_slack) × (N_non_slack)
+        """
         size = len(self.p_buses)
         J1 = np.zeros((size, size))
-        
-        for r, bus_i in enumerate(self.p_buses):
-            for c, bus_j in enumerate(self.p_buses):
-                yij = self.ybus.loc[bus_i.name, bus_j.name]
-                gij, bij = yij.real, yij.imag
-                delta_ij = bus_i.delta - bus_j.delta
-                
-                if r != c: # Off-diagonal
-                    J1[r, c] = bus_i.vpu * bus_j.vpu * (gij * math.sin(delta_ij) - bij * math.cos(delta_ij))
-                else:      # Diagonal
-                    p_calc, q_calc = self._get_p_q_calc(bus_i.name)
-                    # Diagonal formula: -Q_i - B_ii * V_i^2
-                    yii = self.ybus.loc[bus_i.name, bus_i.name]
-                    J1[r, c] = -q_calc - yii.imag * (bus_i.vpu ** 2)
+
+        for r, bus_k in enumerate(self.p_buses):   # row  → bus k
+            for c, bus_n in enumerate(self.p_buses):   # col → bus n
+
+                # Pull admittance Y_kn from the Ybus and convert to polar form
+                y_kn  = self.ybus.loc[bus_k.name, bus_n.name]
+                Y_mag = abs(y_kn)           # |Y_kn|
+                theta = math.atan2(y_kn.imag, y_kn.real)  # θ_kn
+
+                # Angle difference  δ_k - δ_n
+                d_kn = bus_k.delta - bus_n.delta
+
+                if r != c:
+                    # ── Off-diagonal ──────────────────────────────────────────
+                    # J1_kn = V_k · Y_kn · V_n · sin(δ_k - δ_n - θ_kn)
+                    J1[r, c] = (bus_k.vpu
+                                * Y_mag
+                                * bus_n.vpu
+                                * math.sin(d_kn - theta))
+                else:
+                    # ── Diagonal ─────────────────────────────────────────────
+                    # J1_kk = -V_k · Σ_{n≠k} [ Y_kn · V_n · sin(δ_k-δ_n-θ_kn) ]
+                    # We sum over ALL buses in the system (not just p_buses)
+                    # because the Ybus includes connections to every bus.
+                    total = 0.0
+                    for other_name, other_bus in self.buses.items():
+                        if other_name == bus_k.name:
+                            continue  # skip n = k term
+                        y_kn_full = self.ybus.loc[bus_k.name, other_name]
+                        Ym = abs(y_kn_full)
+                        th = math.atan2(y_kn_full.imag, y_kn_full.real)
+                        d  = bus_k.delta - other_bus.delta
+                        total += Ym * other_bus.vpu * math.sin(d - th)
+
+                    J1[r, c] = -bus_k.vpu * total
+
         return J1
 
+    # ── J2: dP/d|V| ───────────────────────────────────────────────────────────
     def _calc_j2(self):
-        """J2 = dP / d|V| (Size: N_non_slack x N_PQ)"""
+        """
+        J2 submatrix — partial derivative of real power P with respect to
+        voltage magnitude |V|.
+
+          Off-diagonal  (k ≠ n):
+              J2_kn = V_k · Y_kn · cos(δ_k - δ_n - θ_kn)
+
+          Diagonal  (k = n):
+              J2_kk = V_k · Y_kk · cos(θ_kk)
+                      + Σ_{n=1}^{N} [ Y_kn · V_n · cos(δ_k - δ_n - θ_kn) ]
+              Note: the self-term (n=k) IS included in the summation here.
+
+        Size: (N_non_slack) × (N_PQ)
+        """
         rows = len(self.p_buses)
         cols = len(self.q_buses)
         J2 = np.zeros((rows, cols))
-        
-        for r, bus_i in enumerate(self.p_buses):
-            for c, bus_j in enumerate(self.q_buses):
-                yij = self.ybus.loc[bus_i.name, bus_j.name]
-                gij, bij = yij.real, yij.imag
-                delta_ij = bus_i.delta - bus_j.delta
-                
-                if bus_i.name != bus_j.name: # Off-diagonal
-                    J2[r, c] = bus_i.vpu * (gij * math.cos(delta_ij) + bij * math.sin(delta_ij))
-                else:                        # Diagonal
-                    p_calc, q_calc = self._get_p_q_calc(bus_i.name)
-                    yii = self.ybus.loc[bus_i.name, bus_i.name]
-                    J2[r, c] = (p_calc / bus_i.vpu) + yii.real * bus_i.vpu
+
+        for r, bus_k in enumerate(self.p_buses):    # row → bus k
+            for c, bus_n in enumerate(self.q_buses):  # col → bus n (PQ only)
+
+                y_kn  = self.ybus.loc[bus_k.name, bus_n.name]
+                Y_mag = abs(y_kn)
+                theta = math.atan2(y_kn.imag, y_kn.real)
+                d_kn  = bus_k.delta - bus_n.delta
+
+                if bus_k.name != bus_n.name:
+                    # ── Off-diagonal ──────────────────────────────────────────
+                    # J2_kn = V_k · Y_kn · cos(δ_k - δ_n - θ_kn)
+                    J2[r, c] = bus_k.vpu * Y_mag * math.cos(d_kn - theta)
+                else:
+                    # ── Diagonal ─────────────────────────────────────────────
+                    # J2_kk = V_k·Y_kk·cos(θ_kk)
+                    #         + Σ_{n=1}^{N} Y_kn·V_n·cos(δ_k-δ_n-θ_kn)
+                    #
+                    # First term: self-admittance contribution
+                    y_kk   = self.ybus.loc[bus_k.name, bus_k.name]
+                    Y_kk   = abs(y_kk)
+                    th_kk  = math.atan2(y_kk.imag, y_kk.real)
+                    first  = bus_k.vpu * Y_kk * math.cos(th_kk)
+
+                    # Second term: sum over ALL buses (including n=k this time)
+                    total = 0.0
+                    for other_name, other_bus in self.buses.items():
+                        y_kn_full = self.ybus.loc[bus_k.name, other_name]
+                        Ym = abs(y_kn_full)
+                        th = math.atan2(y_kn_full.imag, y_kn_full.real)
+                        d  = bus_k.delta - other_bus.delta
+                        total += Ym * other_bus.vpu * math.cos(d - th)
+
+                    J2[r, c] = first + total
+
         return J2
 
+    # ── J3: dQ/d_delta ────────────────────────────────────────────────────────
     def _calc_j3(self):
-        """J3 = dQ / dDelta (Size: N_PQ x N_non_slack)"""
+        """
+        J3 submatrix — partial derivative of reactive power Q with respect to
+        voltage angle δ.
+
+          Off-diagonal  (k ≠ n):
+              J3_kn = -V_k · Y_kn · V_n · cos(δ_k - δ_n - θ_kn)
+
+          Diagonal  (k = n):
+              J3_kk = V_k · Σ_{n≠k} [ Y_kn · V_n · cos(δ_k - δ_n - θ_kn) ]
+
+        Size: (N_PQ) × (N_non_slack)
+        """
         rows = len(self.q_buses)
         cols = len(self.p_buses)
         J3 = np.zeros((rows, cols))
-        
-        for r, bus_i in enumerate(self.q_buses):
-            for c, bus_j in enumerate(self.p_buses):
-                yij = self.ybus.loc[bus_i.name, bus_j.name]
-                gij, bij = yij.real, yij.imag
-                delta_ij = bus_i.delta - bus_j.delta
-                
-                if bus_i.name != bus_j.name: # Off-diagonal
-                    J3[r, c] = -bus_i.vpu * bus_j.vpu * (gij * math.cos(delta_ij) + bij * math.sin(delta_ij))
-                else:                        # Diagonal
-                    p_calc, q_calc = self._get_p_q_calc(bus_i.name)
-                    yii = self.ybus.loc[bus_i.name, bus_i.name]
-                    J3[r, c] = p_calc - yii.real * (bus_i.vpu ** 2)
+
+        for r, bus_k in enumerate(self.q_buses):    # row → bus k (PQ only)
+            for c, bus_n in enumerate(self.p_buses):  # col → bus n
+
+                y_kn  = self.ybus.loc[bus_k.name, bus_n.name]
+                Y_mag = abs(y_kn)
+                theta = math.atan2(y_kn.imag, y_kn.real)
+                d_kn  = bus_k.delta - bus_n.delta
+
+                if bus_k.name != bus_n.name:
+                    # ── Off-diagonal ──────────────────────────────────────────
+                    # J3_kn = -V_k · Y_kn · V_n · cos(δ_k - δ_n - θ_kn)
+                    J3[r, c] = (-bus_k.vpu
+                                * Y_mag
+                                * bus_n.vpu
+                                * math.cos(d_kn - theta))
+                else:
+                    # ── Diagonal ─────────────────────────────────────────────
+                    # J3_kk = V_k · Σ_{n≠k} [ Y_kn·V_n·cos(δ_k-δ_n-θ_kn) ]
+                    total = 0.0
+                    for other_name, other_bus in self.buses.items():
+                        if other_name == bus_k.name:
+                            continue  # skip n = k
+                        y_kn_full = self.ybus.loc[bus_k.name, other_name]
+                        Ym = abs(y_kn_full)
+                        th = math.atan2(y_kn_full.imag, y_kn_full.real)
+                        d  = bus_k.delta - other_bus.delta
+                        total += Ym * other_bus.vpu * math.cos(d - th)
+
+                    J3[r, c] = bus_k.vpu * total
+
         return J3
 
+    # ── J4: dQ/d|V| ───────────────────────────────────────────────────────────
     def _calc_j4(self):
-        """J4 = dQ / d|V| (Size: N_PQ x N_PQ)"""
+        """
+        J4 submatrix — partial derivative of reactive power Q with respect to
+        voltage magnitude |V|.
+
+          Off-diagonal  (k ≠ n):
+              J4_kn = V_k · Y_kn · sin(δ_k - δ_n - θ_kn)
+
+          Diagonal  (k = n):
+              J4_kk = -V_k · Y_kk · sin(θ_kk)
+                      + Σ_{n=1}^{N} [ Y_kn · V_n · sin(δ_k - δ_n - θ_kn) ]
+              Note: the self-term (n=k) IS included in the summation here.
+
+        Size: (N_PQ) × (N_PQ)
+        """
         size = len(self.q_buses)
         J4 = np.zeros((size, size))
-        
-        for r, bus_i in enumerate(self.q_buses):
-            for c, bus_j in enumerate(self.q_buses):
-                yij = self.ybus.loc[bus_i.name, bus_j.name]
-                gij, bij = yij.real, yij.imag
-                delta_ij = bus_i.delta - bus_j.delta
-                
-                if r != c: # Off-diagonal
-                    J4[r, c] = bus_i.vpu * (gij * math.sin(delta_ij) - bij * math.cos(delta_ij))
-                else:      # Diagonal
-                    p_calc, q_calc = self._get_p_q_calc(bus_i.name)
-                    yii = self.ybus.loc[bus_i.name, bus_i.name]
-                    J4[r, c] = (q_calc / bus_i.vpu) - yii.imag * bus_i.vpu
+
+        for r, bus_k in enumerate(self.q_buses):    # row → bus k (PQ only)
+            for c, bus_n in enumerate(self.q_buses):  # col → bus n (PQ only)
+
+                y_kn  = self.ybus.loc[bus_k.name, bus_n.name]
+                Y_mag = abs(y_kn)
+                theta = math.atan2(y_kn.imag, y_kn.real)
+                d_kn  = bus_k.delta - bus_n.delta
+
+                if r != c:
+                    # ── Off-diagonal ──────────────────────────────────────────
+                    # J4_kn = V_k · Y_kn · sin(δ_k - δ_n - θ_kn)
+                    J4[r, c] = bus_k.vpu * Y_mag * math.sin(d_kn - theta)
+                else:
+                    # ── Diagonal ─────────────────────────────────────────────
+                    # J4_kk = -V_k·Y_kk·sin(θ_kk)
+                    #         + Σ_{n=1}^{N} Y_kn·V_n·sin(δ_k-δ_n-θ_kn)
+                    #
+                    # First term: self-admittance contribution (negative)
+                    y_kk   = self.ybus.loc[bus_k.name, bus_k.name]
+                    Y_kk   = abs(y_kk)
+                    th_kk  = math.atan2(y_kk.imag, y_kk.real)
+                    first  = -bus_k.vpu * Y_kk * math.sin(th_kk)
+
+                    # Second term: sum over ALL buses (including n=k)
+                    total = 0.0
+                    for other_name, other_bus in self.buses.items():
+                        y_kn_full = self.ybus.loc[bus_k.name, other_name]
+                        Ym = abs(y_kn_full)
+                        th = math.atan2(y_kn_full.imag, y_kn_full.real)
+                        d  = bus_k.delta - other_bus.delta
+                        total += Ym * other_bus.vpu * math.sin(d - th)
+
+                    J4[r, c] = first + total
+
         return J4
 
+
+def cmath_phase(z: complex) -> float:
+    """Return the phase angle (radians) of a complex number z."""
+    return math.atan2(z.imag, z.real)
 
 if __name__ == "__main__":
     circuit1 = Circuit("Test Circuit")
