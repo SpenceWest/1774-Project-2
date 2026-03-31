@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import math
 
+# Import the Newton-Raphson solver for Milestone 8
+from PowerFlow import PowerFlow
 
 class Circuit:
     def __init__(self, name: str, base_mva: float = 100.0):
@@ -167,51 +169,53 @@ class Circuit:
 if __name__ == "__main__":
     circuit1 = Circuit("Test Circuit")
 
-    # Modified: Adding bus_type to add_bus based on Milestone 6 Needs
-    circuit1.add_bus("Bus 1", 15.0, bus_type="PQ")
+    # Modified: Adding bus_type to add_bus based on your latest update
+    circuit1.add_bus("Bus 1", 15.0, bus_type="Slack")
     circuit1.add_bus("Bus 2", 345.0, bus_type="PQ")
     circuit1.add_bus("Bus 3", 15.75, bus_type="PV")
     circuit1.add_bus("Bus 4", 345.0, bus_type="PQ")
-    circuit1.add_bus("Bus 5", 345.0, bus_type="Slack")
+    circuit1.add_bus("Bus 5", 345.0, bus_type="PQ")
 
-    # Add bus vpu  of ex powerworld
+    # Add bus vpu
     circuit1.buses["Bus 1"].vpu = 1
     circuit1.buses["Bus 2"].vpu = 1
     circuit1.buses["Bus 3"].vpu = 1.05
     circuit1.buses["Bus 4"].vpu = 1
     circuit1.buses["Bus 5"].vpu = 1
 
-    # Add bus delta  of ex powerworld
+    # Add bus delta
     circuit1.buses["Bus 1"].delta = 0
     circuit1.buses["Bus 2"].delta = 0
     circuit1.buses["Bus 3"].delta = 0
     circuit1.buses["Bus 4"].delta = 0
     circuit1.buses["Bus 5"].delta = 0
 
-    # Add line components of ex powerworld
+    # Add line components
     circuit1.add_transmission_line("Line 1", "Bus 4", "Bus 2", 0.009, 0.1, 0.0, 1.72)
     circuit1.add_transmission_line("Line 2", "Bus 5", "Bus 2", 0.0045, 0.05, 0.0, 0.88)
     circuit1.add_transmission_line("Line 3", "Bus 5", "Bus 4", 0.00225, 0.025, 0.0, 0.44)
 
-    # Add transformers components of ex powerworld
+    # Add transformers components
     circuit1.add_transformer("T1", "Bus 1", "Bus 5", 0.0015, 0.02)
     circuit1.add_transformer("T2", "Bus 3", "Bus 4", 0.00075, 0.01)
 
-    # Add line generator of ex powerworld
+    # Add generators
     circuit1.add_generator("G1", "Bus 1", 1.00, 278.0)
     circuit1.add_generator("G2", "Bus 3", 1.05, 520.0)
 
-    # Add line load of ex powerworld
+    # Add loads
     circuit1.add_load_element("Load 1", "Bus 2", 800.0, 280.0)
     circuit1.add_load_element("Load 2", "Bus 3", 80.0, 40.0)
 
     # 1. First calculate Ybus
     circuit1.calc_ybus()
+    
+    # Optional: Print initial status
     print("\n--- Ybus Matrix ---")
     print(circuit1.ybus)
 
-    # 2. Test Milestone 6 Methods
-    print("\n--- Milestone 6: Power Mismatch Vector ---")
-    mismatch_vector = circuit1.compute_power_mismatch()
-    print("Mismatch Vector f:")
-    print(mismatch_vector)
+    # 2. Execute Newton-Raphson Power Flow (Milestone 8)
+    nr_solver = PowerFlow(circuit1)
+    
+    # Passing buses and ybus to perfectly match the PDF method signature requirement
+    nr_solver.solve(buses=circuit1.buses, ybus=circuit1.ybus, tol=0.001, max_iter=50)
