@@ -257,6 +257,7 @@ class Jacobian:
                         total += Ym * other_bus.vpu * math.sin(d - th)
 
                     J4[r, c] = first + total
+                    #J4[r, c] = bus_k.bus_index
 
         return J4
 
@@ -269,11 +270,11 @@ if __name__ == "__main__":
     circuit1 = Circuit("Test Circuit")
 
     # Modified: Adding bus_type to add_bus based on Milestone 6 Needs
-    circuit1.add_bus("Bus 1", 15.0, bus_type="PQ")
+    circuit1.add_bus("Bus 1", 15.0, bus_type="Slack")
     circuit1.add_bus("Bus 2", 345.0, bus_type="PQ")
     circuit1.add_bus("Bus 3", 15.75, bus_type="PV")
     circuit1.add_bus("Bus 4", 345.0, bus_type="PQ")
-    circuit1.add_bus("Bus 5", 345.0, bus_type="Slack")
+    circuit1.add_bus("Bus 5", 345.0, bus_type="PQ")
 
     # Add bus vpu  of ex powerworld
     circuit1.buses["Bus 1"].vpu = 1
@@ -317,8 +318,21 @@ if __name__ == "__main__":
     print("Mismatch Vector f:")
     print(mismatch_vector)
 
-    jacobian1 = Jacobian( circuit1.buses, circuit1.ybus)
-    jacobian1_matrix= jacobian1.calc_jacobian()
+    jacobian1 = Jacobian(circuit1.buses, circuit1.ybus)
+    jacobian1_matrix = jacobian1.calc_jacobian()
 
-    print("\n--- Jacobian Matrix ---")
-    print(jacobian1_matrix.shape)
+    row_labels = (
+            [f"dP / {b.name}" for b in jacobian1.p_buses] +
+            [f"dQ / {b.name}" for b in jacobian1.q_buses]
+    )
+    col_labels = (
+            [f"d_delta {b.name}" for b in jacobian1.p_buses] +
+            [f"d|V| {b.name}" for b in jacobian1.q_buses]
+    )
+    df_J = pd.DataFrame(jacobian1_matrix, index=row_labels, columns=col_labels)
+
+    pd.set_option("display.float_format", "{:8.4f}".format)
+    pd.set_option("display.width", 200)
+    pd.set_option("display.max_columns", None)  # ← no limit on columns
+
+    print(df_J)
