@@ -71,7 +71,7 @@ class Jacobian:
                 theta = math.atan2(y_kn.imag, y_kn.real)  # θ_kn
 
                 # Angle difference  δ_k - δ_n
-                d_kn = bus_k.delta - bus_n.delta
+                d_kn = np.deg2rad(bus_k.delta - bus_n.delta)
 
                 if r != c:
                     # ── Off-diagonal ──────────────────────────────────────────
@@ -92,7 +92,7 @@ class Jacobian:
                         y_kn_full = self.ybus.loc[bus_k.name, other_name]
                         Ym = abs(y_kn_full)
                         th = math.atan2(y_kn_full.imag, y_kn_full.real)
-                        d  = bus_k.delta - other_bus.delta
+                        d  = np.deg2rad(bus_k.delta - other_bus.delta)
                         total += Ym * other_bus.vpu * math.sin(d - th)
 
                     J1[r, c] = -bus_k.vpu * total
@@ -125,7 +125,7 @@ class Jacobian:
                 y_kn  = self.ybus.loc[bus_k.name, bus_n.name]
                 Y_mag = abs(y_kn)
                 theta = math.atan2(y_kn.imag, y_kn.real)
-                d_kn  = bus_k.delta - bus_n.delta
+                d_kn  = np.deg2rad(bus_k.delta - bus_n.delta)
 
                 if bus_k.name != bus_n.name:
                     # ── Off-diagonal ──────────────────────────────────────────
@@ -148,7 +148,7 @@ class Jacobian:
                         y_kn_full = self.ybus.loc[bus_k.name, other_name]
                         Ym = abs(y_kn_full)
                         th = math.atan2(y_kn_full.imag, y_kn_full.real)
-                        d  = bus_k.delta - other_bus.delta
+                        d  = np.deg2rad(bus_k.delta - other_bus.delta)
                         total += Ym * other_bus.vpu * math.cos(d - th)
 
                     J2[r, c] = first + total
@@ -179,7 +179,7 @@ class Jacobian:
                 y_kn  = self.ybus.loc[bus_k.name, bus_n.name]
                 Y_mag = abs(y_kn)
                 theta = math.atan2(y_kn.imag, y_kn.real)
-                d_kn  = bus_k.delta - bus_n.delta
+                d_kn  = np.deg2rad(bus_k.delta - bus_n.delta)
 
                 if bus_k.name != bus_n.name:
                     # ── Off-diagonal ──────────────────────────────────────────
@@ -198,7 +198,7 @@ class Jacobian:
                         y_kn_full = self.ybus.loc[bus_k.name, other_name]
                         Ym = abs(y_kn_full)
                         th = math.atan2(y_kn_full.imag, y_kn_full.real)
-                        d  = bus_k.delta - other_bus.delta
+                        d  = np.deg2rad(bus_k.delta - other_bus.delta)
                         total += Ym * other_bus.vpu * math.cos(d - th)
 
                     J3[r, c] = bus_k.vpu * total
@@ -230,7 +230,7 @@ class Jacobian:
                 y_kn  = self.ybus.loc[bus_k.name, bus_n.name]
                 Y_mag = abs(y_kn)
                 theta = math.atan2(y_kn.imag, y_kn.real)
-                d_kn  = bus_k.delta - bus_n.delta
+                d_kn  = np.deg2rad(bus_k.delta - bus_n.delta)
 
                 if r != c:
                     # ── Off-diagonal ──────────────────────────────────────────
@@ -253,7 +253,7 @@ class Jacobian:
                         y_kn_full = self.ybus.loc[bus_k.name, other_name]
                         Ym = abs(y_kn_full)
                         th = math.atan2(y_kn_full.imag, y_kn_full.real)
-                        d  = bus_k.delta - other_bus.delta
+                        d  = np.deg2rad(bus_k.delta - other_bus.delta)
                         total += Ym * other_bus.vpu * math.sin(d - th)
 
                     J4[r, c] = first + total

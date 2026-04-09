@@ -8,8 +8,7 @@ import numpy as np
 import pandas as pd
 import math
 
-# Import the Newton-Raphson solver for Milestone 8
-from PowerFlow import PowerFlow
+
 
 class Circuit:
     def __init__(self, name: str, base_mva: float = 100.0):
@@ -62,6 +61,41 @@ class Circuit:
         new_transformer = Transformer(name, bus1_name, bus2_name, r, x)
         self.transformers[name] = new_transformer
 
+    def compute_power_mismatch(self):
+        """
+        Computes the mismatch vector 'f' for the current system state.
+        Iterates over all buses and applies formulas based on bus type.
+        """
+        if self.ybus is None:
+            raise ValueError("Ybus has not been calculated yet. Call calc_ybus() first.")
+
+        deltaQ_list = []
+        deltaP_list = []
+
+        for bus_name, bus in self.buses.items():
+            # Slack bus: No mismatch calculation required
+            if bus.bus_type == "Slack":
+                continue
+
+            # Get specified values (P_spec, Q_spec)
+            p_spec, q_spec = bus.get_specified_pq()
+
+            # Get calculated values (P_calc, Q_calc)
+            p_calc, q_calc = self.compute_power_injection(bus_name)
+
+            # Real Power Mismatch (delta_P)
+            delta_p = p_spec - p_calc
+            deltaP_list.append(delta_p)
+
+            # Reactive Power Mismatch (delta_Q) - Only for PQ buses
+            if bus.bus_type == "PQ":
+                delta_q = q_spec - q_calc
+                deltaQ_list.append(delta_q)
+
+        # Return as a numpy array for numerical solver compatibility
+        f = np.array(deltaP_list + deltaQ_list, dtype=float)
+        return f
+
     def calc_ybus(self):
         N = len(self.buses.keys())
         y_matrix = pd.DataFrame(np.zeros((N, N)), dtype=complex, index=list(self.buses.keys()),
@@ -105,11 +139,11 @@ class Circuit:
         q_calc = 0.0
 
         vi = bus.vpu
-        delta_i = bus.delta
+        delta_i = np.deg2rad(bus.delta)
 
         for j_name, j_bus in self.buses.items():
             vj = j_bus.vpu
-            delta_j = j_bus.delta
+            delta_j = np.deg2rad(j_bus.delta)
 
             # Extract Ybus element using pandas loc
             yij = self.ybus.loc[i_name, j_name]
@@ -129,41 +163,6 @@ class Circuit:
         q_calc *= vi
 
         return p_calc, q_calc
-
-    def compute_power_mismatch(self):
-        """
-        Computes the mismatch vector 'f' for the current system state.
-        Iterates over all buses and applies formulas based on bus type.
-        """
-        if self.ybus is None:
-            raise ValueError("Ybus has not been calculated yet. Call calc_ybus() first.")
-
-        deltaQ_list = []
-        deltaP_list = []
-
-        for bus_name, bus in self.buses.items():
-            # Slack bus: No mismatch calculation required
-            if bus.bus_type == "Slack":
-                continue
-
-            # Get specified values (P_spec, Q_spec)
-            p_spec, q_spec = bus.get_specified_pq()
-
-            # Get calculated values (P_calc, Q_calc)
-            p_calc, q_calc = self.compute_power_injection(bus_name)
-
-            # Real Power Mismatch (delta_P)
-            delta_p = p_spec - p_calc
-            deltaP_list.append(delta_p)
-
-            # Reactive Power Mismatch (delta_Q) - Only for PQ buses
-            if bus.bus_type == "PQ":
-                delta_q = q_spec - q_calc
-                deltaQ_list.append(delta_q)
-
-        # Return as a numpy array for numerical solver compatibility
-        f = np.array(deltaP_list + deltaQ_list, dtype=float)
-        return f
 
 
 if __name__ == "__main__":
@@ -214,8 +213,3 @@ if __name__ == "__main__":
     print("\n--- Ybus Matrix ---")
     print(circuit1.ybus)
 
-    # 2. Execute Newton-Raphson Power Flow (Milestone 8)
-    nr_solver = PowerFlow(circuit1)
-    
-    # Passing buses and ybus to perfectly match the PDF method signature requirement
-    nr_solver.solve(buses=circuit1.buses, ybus=circuit1.ybus, tol=0.001, max_iter=50)
