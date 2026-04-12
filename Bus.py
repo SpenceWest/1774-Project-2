@@ -1,7 +1,7 @@
 from Settings import Settings
 
 class Bus:
-    bus_index_counter = 0  # Start of the counter
+    bus_index_counter = 0 # Start of the counter
     valid_bus_types = {"Slack", "PQ", "PV"} # Different bus types
 
     def __init__(self, name: str, nominal_kv: float, bus_type: str):
