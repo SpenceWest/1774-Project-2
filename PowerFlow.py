@@ -152,7 +152,7 @@ if __name__ == "__main__":
 
     pd.set_option("display.float_format", "{:8.4f}".format)
     pd.set_option("display.width", 200)
-    pd.set_option("display.max_columns", None)  # ← no limit on columnss
+    pd.set_option("display.max_columns", None)  # ← no limit on columns
 
     print(df_J)
 
