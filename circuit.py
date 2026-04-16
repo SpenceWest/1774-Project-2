@@ -39,11 +39,11 @@ class Circuit:
         else:
             print(f"Warning: Bus '{bus_name}' not found. Load '{name}' not attached to a bus.")
 
-    def add_generator(self, name: str, bus1_name: str, voltage_setpoint: float, mw_setpoint: float):
+    def add_generator(self, name: str, bus1_name: str, voltage_setpoint: float, mw_setpoint: float, x_subtransient: float = 0.0):
         if name in self.generators:
             raise ValueError(f"Generator with name '{name}' already exists.")
 
-        new_generator = Generator(name, bus1_name, voltage_setpoint, mw_setpoint)
+        new_generator = Generator(name, bus1_name, voltage_setpoint, mw_setpoint, x_subtransient=x_subtransient)
         self.generators[name] = new_generator
         # Automatically attach the generator to the respective Bus object
         if bus1_name in self.buses:
@@ -53,6 +53,7 @@ class Circuit:
                 self.buses[bus1_name].vpu = voltage_setpoint
         else:
             print(f"Warning: Bus '{bus1_name}' not found. Generator '{name}' not attached to a bus.")
+
 
     def add_transformer(self, name: str, bus1_name: str, bus2_name: str, r: float, x: float):
         if name in self.transformers:
