@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import numpy as np
+
 class TransmissionLine:
     def __init__(self, name:str, bus1_name:str, bus2_name:str, r:float, x:float, g:float, b:float):
         self.name = name
