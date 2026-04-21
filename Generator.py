@@ -1,7 +1,7 @@
 from Settings import Settings
 
 class Generator:
-    def __init__(self, name: str, bus_name: str, voltage_setpoint: float, mw_setpoint: float):
+    def __init__(self, name: str, bus_name: str, voltage_setpoint: float, mw_setpoint: float, x_subtransient: float = 0.0):
         """
         Initialize a Generator attached to a specific bus.
 
@@ -14,12 +14,28 @@ class Generator:
         self.bus_name = bus_name
         self.voltage_setpoint = voltage_setpoint
         self.mw_setpoint = mw_setpoint
+        self.x_subtransient = x_subtransient
 
     def calc_p(self):
-        """
-        Calculates the per-unit real power generation.
-        Generation is considered a POSITIVE power injection into the bus.
-        """
+
         return self.mw_setpoint / Settings.sbase
 
+    def convert_x_subtransient(self, gen_mva: float, gen_kv: float):
+
+        s_sys = Settings.sbase      # system MVA base
+        self.x_subtransient = (
+            self.x_subtransient
+            * (s_sys / gen_mva)
+            # voltage-ratio term: (gen_kv / sys_kv)^2 — equals 1 when bases match
+        )
+
+    def calc_y_subtransient(self) -> complex:
+
+        if self.x_subtransient == 0.0:
+            raise ValueError(
+                f"Generator '{self.name}': x_subtransient is 0. "
+                "Set it before calling calc_y_subtransient()."
+            )
+
+        return 1.0 / complex(0.0, self.x_subtransient)
 
