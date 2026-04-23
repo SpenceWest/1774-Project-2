@@ -17,4 +17,3 @@ class LoadVisual(QGraphicsItem):
         painter.drawText(0, -5, self.laod.name)
 
 
-]

@@ -202,8 +202,8 @@ if __name__ == "__main__":
     solver.solution(circuit1, mode='powerflow')
 
     # --- Fault Study (fault at Bus 1) ---
-    print("\n===== Fault Study Mode (fault at Bus 1) =====")
-    solver.solution(circuit1, mode='fault', fault_bus='Bus 1', v_prefault=1.0)
+    #print("\n===== Fault Study Mode (fault at Bus 1) =====")
+    #solver.solution(circuit1, mode='fault', fault_bus='Bus 3', v_prefault=1.0)
 
 
 
