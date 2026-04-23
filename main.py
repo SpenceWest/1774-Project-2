@@ -168,9 +168,8 @@ def run_analysis(circuit):
         fault_bus=fault_bus, v_prefault=v_pre)
 
 
-# ─────────────────────────────────────────────
 #  MAIN MENU
-# ─────────────────────────────────────────────
+
 def main():
     print("=" * 45)
     print("   Power System Simulator")
