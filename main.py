@@ -22,9 +22,9 @@ def get_choice(prompt, valid):
         print(f"  Invalid choice. Options: {valid}")
 
 
-# ─────────────────────────────────────────────
-#  SECTION MENUS
-# ─────────────────────────────────────────────
+
+#  Sections
+
 def add_buses(circuit):
     """Prompt the user to add one or more buses."""
     print("\nAdd Buses ")

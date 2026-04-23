@@ -214,7 +214,7 @@ if __name__ == "__main__":
 
     Bus.bus_index_counter = 0  # reset bus counter for second circuit
 
-    circuit2 = Circuit("Module 16 Textbook Example")
+    circuit2 = Circuit("Module 16 Textbook Example"\\
 
     circuit2.add_bus("Bus 1", 13.8, bus_type="Slack")
     circuit2.add_bus("Bus 2", 13.8, bus_type="PQ")
@@ -239,7 +239,7 @@ if __name__ == "__main__":
 
     circuit2.calc_ybus()
 
-    # --- Fault Study (fault at Bus 1) ---
+    # --- Fault Study (fault at Bus 1) --
     print("\n===== Textbook Validation — Fault at Bus 1 =====")
     solver.solution(circuit2, mode='fault', fault_bus='Bus 1', v_prefault=1.0)
 
