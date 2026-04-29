@@ -42,4 +42,6 @@ class BusVisual(QGraphicsItem):
         if change == QGraphicsItem.GraphicsItemChange.ItemPositionChange:
             for line in self.connected_lines:
                 line.update_position()
+
+
         return super().itemChange(change, value)

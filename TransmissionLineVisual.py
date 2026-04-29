@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QGraphicsItem
-from PyQt6.QtCore import QRectF
+from PyQt6.QtCore import QRectF, QPointF
 from PyQt6.QtGui import QPen, QColor, QFont
 
 from TransmissionLine import TransmissionLine
@@ -14,20 +14,19 @@ class TransmissionLineVisual(QGraphicsItem):
         self.bus1_visual       = bus1_visual
         self.bus2_visual       = bus2_visual
 
-        # Register with both buses so we redraw when either moves
-        self.bus1_visual.connected_lines.append(self)
-        self.bus2_visual.connected_lines.append(self)
+    def _get_points(self):
+        """Get bus positions in scene coordinates."""
+        p1 = self.bus1_visual.pos()
+        p2 = self.bus2_visual.pos()
+        return p1, p2
 
     def boundingRect(self):
-        p1 = self.bus1_visual.scenePos()
-        p2 = self.bus2_visual.scenePos()
-        return QRectF(p1, p2).normalized()
+        p1, p2 = self._get_points()
+        return QRectF(p1, p2).normalized().adjusted(-10, -10, 10, 10)
 
     def paint(self, painter, option, widget):
-        p1 = self.bus1_visual.scenePos()
-        p2 = self.bus2_visual.scenePos()
+        p1, p2 = self._get_points()
 
-        # Draw the line
         pen = QPen(QColor(30, 30, 30))
         pen.setWidth(2)
         painter.setPen(pen)
